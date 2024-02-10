@@ -6,6 +6,8 @@
 
     ```
     cd hhuang01_hw0\Phase1\Code
+    ```
+    ```
     python Wrapper.py
     ```
 
@@ -15,6 +17,10 @@
 
     ```
     cd hhuang01_hw0\Phase2\Code
+    ```
+    ```
     python Train.py
+    ```
+    ```
     python Test.py
     ```
