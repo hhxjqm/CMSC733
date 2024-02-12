@@ -144,15 +144,16 @@ def TestOperation(ImageSize, ModelPath, TestSet, LabelsPathPred):
     Predictions written to /content/data/TxtFiles/PredOut.txt
     """
     # Predict output with forward pass, MiniBatchSize for Test is 1
-    # model = CIFAR10Model(InputSize=3,OutputSize=10) 
-    model = ResNet18()
+    # model = CIFAR10Model(InputSize=3,OutputSize=10)
+    # model = ResNet18()
     # model = DenseNet()
-    # model = resnext50()
+    model = resnext50()
+    
     transform = Compose([
         ToTensor(),
         Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2023, 0.1994, 0.2010])
     ])
-       
+
     CheckPoint = torch.load(ModelPath)
     model.load_state_dict(CheckPoint['model_state_dict'])
     model.eval()
@@ -168,7 +169,6 @@ def TestOperation(ImageSize, ModelPath, TestSet, LabelsPathPred):
 
             OutSaveT.write(str(PredT) + '\n')
 
-       
 def main():
     """
     Inputs: 
@@ -179,7 +179,7 @@ def main():
 
     # Parse Command Line arguments
     Parser = argparse.ArgumentParser()
-    Parser.add_argument('--ModelPath', dest='ModelPath', default='../Checkpoints/ResNet18/1model.ckpt', help='Path to load latest model from, Default:ModelPath')
+    Parser.add_argument('--ModelPath', dest='ModelPath', default='../Checkpoints/ResNeXt50/9model.ckpt', help='Path to load latest model from, Default:ModelPath')
     Parser.add_argument('--LabelsPath', dest='LabelsPath', default='./TxtFiles/LabelsTest.txt', help='Path of labels file, Default:./TxtFiles/LabelsTest.txt')
     Args = Parser.parse_args()
     ModelPath = Args.ModelPath
@@ -188,7 +188,6 @@ def main():
 
 
     # Setup all needed parameters including file reading
-    # ImageSize = SetupAll(BasePath)
     ImageSize = SetupAll()
 
     # Define PlaceHolder variables for Predicted output
@@ -199,7 +198,6 @@ def main():
     # Plot Confusion Matrix
     LabelsTrue, LabelsPred = ReadLabels(LabelsPath, LabelsPathPred)
     ConfusionMatrix(LabelsTrue, LabelsPred)
-     
+
 if __name__ == '__main__':
     main()
- 

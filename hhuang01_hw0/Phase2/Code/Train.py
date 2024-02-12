@@ -142,10 +142,9 @@ def TrainOperation(TrainLabels, NumTrainSamples, ImageSize,
     """
     # Initialize the model
     # model = CIFAR10Model(InputSize=3,OutputSize=10)
-
-    model = ResNet18()
+    # model = ResNet18()
     # model = DenseNet()
-    # model = resnext50()
+    model = resnext50()
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device) 
@@ -153,10 +152,10 @@ def TrainOperation(TrainLabels, NumTrainSamples, ImageSize,
     ###############################################
     # Fill your optimizer of choice here!
     ###############################################
-    Optimizer = torch.optim.Adam(model.parameters(), weight_decay = 1e-4 ,lr=0.001)
+    # Optimizer = torch.optim.Adam(model.parameters(), weight_decay = 1e-4 ,lr=0.001)
     
     # 3.4. Improving Accuracy of your neural network lr0.01 -> lr=0.001
-    # Optimizer = torch.optim.Adam(model.parameters(), weight_decay = 1e-4 ,lr=0.0005)
+    Optimizer = torch.optim.Adam(model.parameters(), weight_decay = 1e-4 ,lr=0.0005)
     
     # Tensorboard
     # Create a summary to monitor loss tensor
@@ -246,16 +245,16 @@ def main():
     """
     # Parse Command Line arguments
     Parser = argparse.ArgumentParser()
-    Parser.add_argument('--CheckPointPath', default='../Checkpoints/ResNet18/', help='Path to save Checkpoints, Default: ../Checkpoints/')
-    Parser.add_argument('--NumEpochs', type=int, default=2, help='Number of Epochs to Train for, Default:50')
+    Parser.add_argument('--CheckPointPath', default='../Checkpoints/ResneXt50/', help='Path to save Checkpoints, Default: ../Checkpoints/')
+    Parser.add_argument('--NumEpochs', type=int, default=10, help='Number of Epochs to Train for, Default:50')
     Parser.add_argument('--DivTrain', type=int, default=1, help='Factor to reduce Train data by per epoch, Default:1')
     
-    Parser.add_argument('--MiniBatchSize', type=int, default=32, help='Size of the MiniBatch to use, Default:1')
+    # Parser.add_argument('--MiniBatchSize', type=int, default=32, help='Size of the MiniBatch to use, Default:1')
     # 3.4. Improving Accuracy of your neural network
-    # Parser.add_argument('--MiniBatchSize', type=int, default=64, help='Size of the MiniBatch to use, Default:1')
+    Parser.add_argument('--MiniBatchSize', type=int, default=64, help='Size of the MiniBatch to use, Default:1')
     
     Parser.add_argument('--LoadCheckPoint', type=int, default=0, help='Load Model from latest Checkpoint from CheckPointsPath?, Default:0')
-    Parser.add_argument('--LogsPath', default='./Logs/ResNet18', help='Path to save Logs for Tensorboard, Default=Logs/')
+    Parser.add_argument('--LogsPath', default='./Logs/ResneXt50', help='Path to save Logs for Tensorboard, Default=Logs/')
     TrainSet = torchvision.datasets.CIFAR10(root='./data', train=True,
                                         download=True, transform=ToTensor())
 
