@@ -180,11 +180,11 @@ def main():
     # Parse Command Line arguments
     Parser = argparse.ArgumentParser()
     Parser.add_argument('--ModelPath', dest='ModelPath', default='../Checkpoints/ResNeXt50/9model.ckpt', help='Path to load latest model from, Default:ModelPath')
-    Parser.add_argument('--LabelsPath', dest='LabelsPath', default='./TxtFiles/LabelsTest.txt', help='Path of labels file, Default:./TxtFiles/LabelsTest.txt')
+    Parser.add_argument('--LabelsPath', dest='LabelsPath', default='./TxtFiles/LabelsTrain.txt', help='Path of labels file, Default:./TxtFiles/LabelsTest.txt')
     Args = Parser.parse_args()
     ModelPath = Args.ModelPath
     LabelsPath = Args.LabelsPath
-    TestSet = torchvision.datasets.CIFAR10(root='data/', train=False)
+    TestSet = torchvision.datasets.CIFAR10(root='data/', train=True)
 
 
     # Setup all needed parameters including file reading
