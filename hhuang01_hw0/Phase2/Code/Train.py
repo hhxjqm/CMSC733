@@ -141,10 +141,10 @@ def TrainOperation(TrainLabels, NumTrainSamples, ImageSize,
     Saves Trained network in CheckPointPath and Logs to LogsPath
     """
     # Initialize the model
-    # model = CIFAR10Model(InputSize=3,OutputSize=10)
+    model = CIFAR10Model(InputSize=3,OutputSize=10)
     # model = ResNet18()
     # model = DenseNet()
-    model = resnext50()
+    # model = resnext50()
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device) 
@@ -152,8 +152,8 @@ def TrainOperation(TrainLabels, NumTrainSamples, ImageSize,
     ###############################################
     # Fill your optimizer of choice here!
     ###############################################
-    # Optimizer = torch.optim.Adam(model.parameters(), weight_decay = 1e-4 ,lr=0.001)
     
+    # Optimizer = torch.optim.Adam(model.parameters(), weight_decay = 1e-4 ,lr=0.001)
     # 3.4. Improving Accuracy of your neural network lr0.01 -> lr=0.001
     Optimizer = torch.optim.Adam(model.parameters(), weight_decay = 1e-4 ,lr=0.0005)
     

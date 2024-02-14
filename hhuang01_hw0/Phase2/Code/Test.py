@@ -42,6 +42,7 @@ from Network.Network import CIFAR10Model, DenseNet, ResNet18, VGGNet, resnext50
 from Misc.MiscUtils import *
 from Misc.DataUtils import *
 from torchvision.transforms import ToTensor, Normalize, Compose
+from time import time
 
 # Don't generate pyc codes
 sys.dont_write_bytecode = True
@@ -130,7 +131,8 @@ def ConfusionMatrix(LabelsTrue, LabelsPred):
     class_numbers = [" ({0})".format(i) for i in range(10)]
     print("".join(class_numbers))
 
-    print('Accuracy: '+ str(Accuracy(LabelsPred, LabelsTrue)), '%')
+    return Accuracy(LabelsPred, LabelsTrue)/100.0
+    # print('Accuracy: '+ str(Accuracy(LabelsPred, LabelsTrue)), '%')
 
 
 def TestOperation(ImageSize, ModelPath, TestSet, LabelsPathPred):
@@ -144,16 +146,17 @@ def TestOperation(ImageSize, ModelPath, TestSet, LabelsPathPred):
     Predictions written to /content/data/TxtFiles/PredOut.txt
     """
     # Predict output with forward pass, MiniBatchSize for Test is 1
-    # model = CIFAR10Model(InputSize=3,OutputSize=10)
+    model = CIFAR10Model(InputSize=3,OutputSize=10)
     # model = ResNet18()
     # model = DenseNet()
-    model = resnext50()
+    # model = resnext50()
     
     transform = Compose([
         ToTensor(),
         Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2023, 0.1994, 0.2010])
     ])
 
+    # times = []
     CheckPoint = torch.load(ModelPath)
     model.load_state_dict(CheckPoint['model_state_dict'])
     model.eval()
@@ -165,9 +168,15 @@ def TestOperation(ImageSize, ModelPath, TestSet, LabelsPathPred):
             
             Img = transform(Img)
 
+            # start_time = time()
             PredT = torch.argmax(model(Img.unsqueeze(0))).item()
-
+            # end_time = time()
+            # inference_time = end_time - start_time
+            # times.append(inference_time)
+            
             OutSaveT.write(str(PredT) + '\n')
+    # average_inference_time = sum(times) / len(times)
+    # print(f'Average inference time per image: {average_inference_time:.4f} seconds')
 
 def main():
     """
@@ -179,25 +188,62 @@ def main():
 
     # Parse Command Line arguments
     Parser = argparse.ArgumentParser()
-    Parser.add_argument('--ModelPath', dest='ModelPath', default='../Checkpoints/ResNeXt50/9model.ckpt', help='Path to load latest model from, Default:ModelPath')
-    Parser.add_argument('--LabelsPath', dest='LabelsPath', default='./TxtFiles/LabelsTrain.txt', help='Path of labels file, Default:./TxtFiles/LabelsTest.txt')
-    Args = Parser.parse_args()
-    ModelPath = Args.ModelPath
-    LabelsPath = Args.LabelsPath
-    TestSet = torchvision.datasets.CIFAR10(root='data/', train=True)
-
-
-    # Setup all needed parameters including file reading
-    ImageSize = SetupAll()
-
-    # Define PlaceHolder variables for Predicted output
-    LabelsPathPred = './TxtFiles/PredOut.txt' # Path to save predicted labels
-
-    TestOperation(ImageSize, ModelPath, TestSet, LabelsPathPred)
-
-    # Plot Confusion Matrix
-    LabelsTrue, LabelsPred = ReadLabels(LabelsPath, LabelsPathPred)
-    ConfusionMatrix(LabelsTrue, LabelsPred)
+    Parser.add_argument('--TestSet', dest='TestSet', default='test', help='Test on test_set or train_set, Default:test')
+    Set = Parser.parse_args().TestSet
+    
+    if Set == 'test':
+        print("On testing data set 10000 images")
+        test_acc = []
+        
+        for i in range(0,10):
+            Parser.add_argument('--ModelPath', dest='ModelPath', default=f'../Checkpoints/CNN+/{i}model.ckpt', help='Path to load latest model from, Default:ModelPath')
+            Parser.add_argument('--LabelsPath', dest='LabelsPath', default='./TxtFiles/LabelsTest.txt', help='Path of labels file, Default:./TxtFiles/LabelsTest.txt')
+            Args = Parser.parse_args()
+            ModelPath = Args.ModelPath
+            LabelsPath = Args.LabelsPath
+            TestSet = torchvision.datasets.CIFAR10(root='data/', train=False)
+            # Setup all needed parameters including file reading
+            ImageSize = SetupAll()
+            # Define PlaceHolder variables for Predicted output
+            LabelsPathPred = f'./TxtFiles/PredOut{i}.txt' # Path to save predicted labels
+            TestOperation(ImageSize, ModelPath, TestSet, LabelsPathPred)
+            # Plot Confusion Matrix
+            LabelsTrue, LabelsPred = ReadLabels(LabelsPath, LabelsPathPred)
+            test_acc.append(ConfusionMatrix(LabelsTrue, LabelsPred))
+            
+        print("test acc over epochs: ")
+        print(test_acc)
+        epochs = list(range(1, 11))
+        plt.figure(figsize=(10, 6))
+        plt.plot(epochs, test_acc, linestyle='-', color='b', label='Test Accuracy')
+        plt.title('Test Accuracy vs Epoch')
+        plt.xlabel('Epoch')
+        plt.ylabel('Test Accuracy')
+        plt.xticks(epochs)
+        plt.legend()
+        plt.show()
+        
+    elif Set == 'train':
+        print("On training data set 50000 imgaes")
+        Parser.add_argument('--ModelPath', dest='ModelPath', default='../Checkpoints/CNN+/9model.ckpt', help='Path to load latest model from, Default:ModelPath')
+        Parser.add_argument('--LabelsPath', dest='LabelsPath', default='./TxtFiles/LabelsTrain.txt', help='Path of labels file, Default:./TxtFiles/LabelsTest.txt')
+        Args = Parser.parse_args()
+        ModelPath = Args.ModelPath
+        LabelsPath = Args.LabelsPath
+        TestSet = torchvision.datasets.CIFAR10(root='data/', train=True)
+        # Setup all needed parameters including file reading
+        ImageSize = SetupAll()
+        # Define PlaceHolder variables for Predicted output
+        LabelsPathPred = './TxtFiles/PredOut9.txt' # Path to save predicted labels
+        TestOperation(ImageSize, ModelPath, TestSet, LabelsPathPred)
+        # Plot Confusion Matrix
+        LabelsTrue, LabelsPred = ReadLabels(LabelsPath, LabelsPathPred)
+        acc = ConfusionMatrix(LabelsTrue, LabelsPred)
+        print('Accuracy: '+ str(acc))
+    else:
+        print("Error: wrong args")
+        sys.exit(1)
+        
 
 if __name__ == '__main__':
     main()
