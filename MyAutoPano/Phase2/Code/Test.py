@@ -34,7 +34,7 @@ import math as m
 from sklearn.metrics import confusion_matrix
 from tqdm import tqdm
 import torch
-
+from torchvision import transforms as tf
 
 # Don't generate pyc codes
 sys.dont_write_bytecode = True

@@ -23,7 +23,7 @@ import torchvision
 from torch.utils.tensorboard import SummaryWriter
 from torchvision import datasets, transforms
 from torch.optim import AdamW
-from Network.Network import HomographyModel
+# from Network.Network import HomographyModel
 import cv2
 import sys
 import os
@@ -47,7 +47,28 @@ import string
 from termcolor import colored, cprint
 import math as m
 from tqdm import tqdm
+from Network.Network import UnSupHomographyModel
+from Network.Network import SupHomographyModel
+from Network.Network import UnsupLossFn
+from Network.Network import SupLossFn
 
+def apply_homography_and_crop_patch(I1, max_warp=32):
+    h, w = I1.shape[:2]
+    perturbations = np.float32([
+        [np.random.uniform(-max_warp, max_warp), np.random.uniform(-max_warp, max_warp)],
+        [np.random.uniform(-max_warp, max_warp), np.random.uniform(-max_warp, max_warp)],
+        [np.random.uniform(-max_warp, max_warp), np.random.uniform(-max_warp, max_warp)],
+        [np.random.uniform(-max_warp, max_warp), np.random.uniform(-max_warp, max_warp)],
+    ])
+    
+    src_points = np.float32([[0, 0], [w, 0], [w, h], [0, h]])
+    dst_points = src_points + perturbations
+    
+    H = cv2.getPerspectiveTransform(src_points, dst_points)
+    
+    I1_warped = cv2.warpPerspective(I1, H, (w, h))
+    
+    return I1_warped, H
 
 def GenerateBatch(BasePath, DirNamesTrain, TrainCoordinates, ImageSize, MiniBatchSize):
     """
@@ -64,28 +85,23 @@ def GenerateBatch(BasePath, DirNamesTrain, TrainCoordinates, ImageSize, MiniBatc
     CoordinatesBatch - Batch of coordinates
     """
     I1Batch = []
-    CoordinatesBatch = []
-
-    ImageNum = 0
-    while ImageNum < MiniBatchSize:
-        # Generate random image
+    I1WarpedBatch = []
+    HomographyBatch = []
+    
+    for _ in range(MiniBatchSize):
         RandIdx = random.randint(0, len(DirNamesTrain) - 1)
-
-        RandImageName = BasePath + os.sep + DirNamesTrain[RandIdx] + ".jpg"
-        ImageNum += 1
-
-        ##########################################################
-        # Add any standardization or data augmentation here!
-        ##########################################################
-        I1 = np.float32(cv2.imread(RandImageName))
-        Coordinates = TrainCoordinates[RandIdx]
-
-        # Append All Images and Mask
-        I1Batch.append(torch.from_numpy(I1))
-        CoordinatesBatch.append(torch.tensor(Coordinates))
-
-    return torch.stack(I1Batch), torch.stack(CoordinatesBatch)
-
+        RandImageName = os.path.join(BasePath, DirNamesTrain[RandIdx] + ".jpg")
+        
+        I1 = cv2.imread(RandImageName).astype(np.float32)
+        I1 = cv2.resize(I1, (ImageSize[0], ImageSize[1]))
+        
+        I1_warped, H = apply_homography_and_crop_patch(I1)
+        
+        I1Batch.append(torch.from_numpy(I1.transpose(2, 0, 1)))
+        I1WarpedBatch.append(torch.from_numpy(I1_warped.transpose(2, 0, 1)))
+        HomographyBatch.append(torch.from_numpy(H))
+    
+    return torch.stack(I1Batch), torch.stack(I1WarpedBatch), torch.stack(HomographyBatch)
 
 def PrettyPrint(NumEpochs, DivTrain, MiniBatchSize, NumTrainSamples, LatestFile):
     """
@@ -113,6 +129,7 @@ def TrainOperation(
     BasePath,
     LogsPath,
     ModelType,
+    NumClasses,
 ):
     """
     Inputs:
@@ -134,12 +151,19 @@ def TrainOperation(
     Saves Trained network in CheckPointPath and Logs to LogsPath
     """
     # Predict output with forward pass
-    model = HomographyModel()
-
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if ModelType == 'Sup':
+        # Predict output with forward pass
+        model = SupHomographyModel(ImageSize, NumClasses)
+        model.to(device)
+    else:
+        model = UnSupHomographyModel(ImageSize, NumClasses)
+        model.to(device)
+        
     ###############################################
     # Fill your optimizer of choice here!
     ###############################################
-    Optimizer = ...
+    Optimizer = torch.optim.AdamW(model.parameters(),lr = 0.0001)
 
     # Tensorboard
     # Create a summary to monitor loss tensor
@@ -150,6 +174,7 @@ def TrainOperation(
         # Extract only numbers from the name
         StartEpoch = int("".join(c for c in LatestFile.split("a")[0] if c.isdigit()))
         model.load_state_dict(CheckPoint["model_state_dict"])
+        Optimizer.load_state_dict(CheckPoint["optimizer_state_dict"])
         print("Loaded latest checkpoint with the name " + LatestFile + "....")
     else:
         StartEpoch = 0
@@ -158,13 +183,29 @@ def TrainOperation(
     for Epochs in tqdm(range(StartEpoch, NumEpochs)):
         NumIterationsPerEpoch = int(NumTrainSamples / MiniBatchSize / DivTrain)
         for PerEpochCounter in tqdm(range(NumIterationsPerEpoch)):
-            I1Batch, CoordinatesBatch = GenerateBatch(
-                BasePath, DirNamesTrain, TrainCoordinates, ImageSize, MiniBatchSize
-            )
-
-            # Predict output with forward pass
-            PredicatedCoordinatesBatch = model(I1Batch)
-            LossThisBatch = LossFn(PredicatedCoordinatesBatch, CoordinatesBatch)
+        
+            # I1Batch, CoordinatesBatch= GenerateBatch(BasePath, DirNamesTrain, TrainCoordinates, ImageSize, MiniBatchSize)
+            
+            I1Batch, I1WarpedBatch, HomographyBatch = GenerateBatch(BasePath, DirNamesTrain, TrainCoordinates, ImageSize, MiniBatchSize)
+            I1Batch = I1Batch.to(device)
+            I1WarpedBatch = I1WarpedBatch.to(device)
+            HomographyBatch = HomographyBatch.to(device)
+            
+            # if ModelType == 'Sup':
+            #     # I1Batch, CoordinatesBatch= SupGenerateBatch(PerEpochCounter, BasePath, DirNamesTrain, TrainCoordinates, ImageSize, MiniBatchSize)
+            #     PredicatedCoordinatesBatch = model(I1Batch)
+            #     LossThisBatch = SupLossFn(PredicatedCoordinatesBatch, CoordinatesBatch)
+            # else:
+            #     # I1Batch, CoordinatesBatch = UnSupGenerateBatch(PerEpochCounter, BasePath, DirNamesTrain, TrainCoordinates, ImageSize, MiniBatchSize)
+            #     PredicatedCoordinatesBatch = model(I1Batch, CoordinatesBatch)
+            #     LossThisBatch = UnsupLossFn(PredicatedCoordinatesBatch, CoordinatesBatch)
+            
+            if ModelType == 'Sup':
+                predicted_coordinates_batch = model(I1Batch, I1WarpedBatch)
+                LossThisBatch = SupLossFn(predicted_coordinates_batch, HomographyBatch)
+            else:
+                predicted_coordinates_batch = model(I1Batch, I1WarpedBatch, HomographyBatch)
+                LossThisBatch = UnsupLossFn(predicted_coordinates_batch, HomographyBatch)
 
             Optimizer.zero_grad()
             LossThisBatch.backward()
@@ -192,7 +233,7 @@ def TrainOperation(
                 )
                 print("\n" + SaveName + " Model Saved...")
 
-            result = model.validation_step(Batch)
+            result = model.validation_step(I1Batch)
             # Tensorboard
             Writer.add_scalar(
                 "LossEveryIter",
@@ -227,7 +268,7 @@ def main():
     Parser = argparse.ArgumentParser()
     Parser.add_argument(
         "--BasePath",
-        default="/home/lening/workspace/rbe549/YourDirectoryID_p1/Phase2/Data",
+        default="../Data",
         help="Base path of images, Default:/home/lening/workspace/rbe549/YourDirectoryID_p1/Phase2/Data",
     )
     Parser.add_argument(
@@ -238,13 +279,13 @@ def main():
 
     Parser.add_argument(
         "--ModelType",
-        default="Unsup",
+        default="Sup",
         help="Model type, Supervised or Unsupervised? Choose from Sup and Unsup, Default:Unsup",
     )
     Parser.add_argument(
         "--NumEpochs",
         type=int,
-        default=50,
+        default=2,
         help="Number of Epochs to Train for, Default:50",
     )
     Parser.add_argument(
@@ -314,6 +355,7 @@ def main():
         BasePath,
         LogsPath,
         ModelType,
+        NumClasses,
     )
 
 
