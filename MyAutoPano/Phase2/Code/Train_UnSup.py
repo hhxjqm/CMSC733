@@ -51,33 +51,31 @@ from Network.Network import SupHomographyModel
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 from Network.Network import UnSupHomographyModel
 
-def Sup_GenerateBatch(PA_Path, PB_Path, H4Pt_Path, MiniBatchSize):
+def Sup_GenerateBatch(PA_Path, PB_Path, CA_Path, MiniBatchSize):
     PA_Batch = []
     PB_Batch = []
-    H4Pt_Batch = []
+    CA_Batch = []
     ImageNum = 0
     while ImageNum < MiniBatchSize:
         RandIdx = random.randint(1, 5000)
         PA_RandImageName = f"{PA_Path}PA_{RandIdx}.jpg"
         PB_RandImageName = f"{PB_Path}PB_{RandIdx}.jpg"
-        H4Pt_RandName = f"{H4Pt_Path}H4Pt_{RandIdx}.csv"
+        CA_RandName = f"{CA_Path}CA_{RandIdx}.csv"
 
         PA = cv2.imread(PA_RandImageName)
         PB = cv2.imread(PB_RandImageName)
-        if PA is None or PB is None:
-            continue  # Skip this iteration if images are not found
 
-        PA = (np.float32(PA) / 255.0).transpose(2, 0, 1)  # Normalize and transpose
+        PA = (np.float32(PA) / 255.0).transpose(2, 0, 1)
         PB = (np.float32(PB) / 255.0).transpose(2, 0, 1)
 
         PA_Batch.append(torch.from_numpy(PA))
         PB_Batch.append(torch.from_numpy(PB))
-        H4Pt = np.loadtxt(H4Pt_RandName, delimiter=',').reshape(-1).astype(np.float32)  # Ensure correct shape and type
-        H4Pt_Batch.append(torch.from_numpy(H4Pt))
+        CA = np.loadtxt(CA_RandName, delimiter=',').reshape(-1).astype(np.float32)
+        CA_Batch.append(torch.from_numpy(CA))
 
         ImageNum += 1
 
-    return torch.stack(PA_Batch), torch.stack(PB_Batch), torch.stack(H4Pt_Batch)
+    return torch.stack(PA_Batch), torch.stack(PB_Batch), torch.stack(CA_Batch)
 
 def PrettyPrint(NumEpochs, DivTrain, MiniBatchSize, NumTrainSamples, LatestFile):
     """
@@ -129,7 +127,7 @@ def TrainOperation(
     # Predict output with forward pass
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Predict output with forward pass
-    model = SupHomographyModel()
+    model = UnSupHomographyModel()
     model.to(device)
         
     ###############################################
@@ -160,13 +158,13 @@ def TrainOperation(
         epoch_losses = []  # List to store all losses for the current epoch
 
         for PerEpochCounter in tqdm(range(NumIterationsPerEpoch)):
-            PA_Batch, PB_Batch, H4Pt_Batch = Sup_GenerateBatch(PA_path, PB_path, H4Pt_path, MiniBatchSize)
+            PA_Batch, PB_Batch, CA_Batch = Sup_GenerateBatch(PA_path, PB_path, CA_Path, MiniBatchSize)
             PA_Batch = PA_Batch.to(device)
             PB_Batch = PB_Batch.to(device)
-            H4Pt_Batch = H4Pt_Batch.to(device)
+            CA_Batch = CA_Batch.to(device)
 
             predicted_H4Pt_batch = model.forward(PA_Batch, PB_Batch)
-            LossThisBatch = model.training_step(predicted_H4Pt_batch, H4Pt_Batch)
+            LossThisBatch = model.training_step(CA_Batch, predicted_H4Pt_batch, PA_Batch, PB_Batch)
 
             Optimizer.zero_grad()
             LossThisBatch.backward()
@@ -237,14 +235,14 @@ def main():
     )
     Parser.add_argument(
         "--CheckPointPath",
-        default="../Checkpoints/Sup/",
-        help="Path to save Checkpoints, Default: ../Checkpoints/",
+        default="../Checkpoints/UnSup/",
+        help="Path to save Checkpoints, Default: ../Checkpoints/UnSup/",
     )
 
     Parser.add_argument(
         "--ModelType",
-        default="Sup",
-        help="Model type, Supervised or Unsupervised? Choose from Sup and Unsup, Default:Sup",
+        default="UnSup",
+        help="Model type, Supervised or Unsupervised? Choose from Sup and Unsup, Default:UnSup",
     )
     
     Parser.add_argument(
@@ -273,7 +271,7 @@ def main():
     )
     Parser.add_argument(
         "--LogsPath",
-        default="./Logs/Sup/",
+        default="./Logs/UnSup/",
         help="Path to save Logs for Tensorboard, Default=Logs/",
     )
     

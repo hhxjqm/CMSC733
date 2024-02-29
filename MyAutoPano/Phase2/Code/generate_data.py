@@ -2,7 +2,7 @@ import os
 import numpy as np
 import cv2
 
-def generate_data_for_image(image_path, image_idx, rho, patch_size):
+def generate_data_for_image(image_path, save_path, image_idx, rho, patch_size):
     image = cv2.imread(image_path)
     height, width, _ = image.shape
 
@@ -28,23 +28,35 @@ def generate_data_for_image(image_path, image_idx, rho, patch_size):
 
     H4Pt = CB - CA
 
-    cv2.imwrite(os.path.join('./data/PA', f'PA_{image_idx}.jpg'), PA)
-    cv2.imwrite(os.path.join('./data/PB', f'PB_{image_idx}.jpg'), PB)
-    np.savetxt(os.path.join('./data/H4Pt', f'H4Pt_{image_idx}.csv'), H4Pt, delimiter=',')
-    np.savetxt(os.path.join('./data/CA', f'CA_{image_idx}.csv'), CA, delimiter=',')
+    cv2.imwrite(os.path.join(save_path, 'PA', f'PA_{image_idx}.jpg'), PA)
+    cv2.imwrite(os.path.join(save_path, 'PB', f'PB_{image_idx}.jpg'), PB)
+    np.savetxt(os.path.join(save_path, 'H4Pt', f'H4Pt_{image_idx}.csv'), H4Pt, delimiter=',')
+    np.savetxt(os.path.join(save_path, 'CA', f'CA_{image_idx}.csv'), CA, delimiter=',')
 
-os.makedirs('./data/CA', exist_ok=True)
-os.makedirs('./data/H4Pt', exist_ok=True)
-os.makedirs('./data/PA', exist_ok=True)
-os.makedirs('./data/PB', exist_ok=True)
+
+os.makedirs('./data/train/CA', exist_ok=True)
+os.makedirs('./data/train/H4Pt', exist_ok=True)
+os.makedirs('./data/train/PA', exist_ok=True)
+os.makedirs('./data/train/PB', exist_ok=True)
+
+os.makedirs('./data/test/CA', exist_ok=True)
+os.makedirs('./data/test/H4Pt', exist_ok=True)
+os.makedirs('./data/test/PA', exist_ok=True)
+os.makedirs('./data/test/PB', exist_ok=True)
 
 rho = 16
 patch_size = (128, 128)
+save_path_train = './data/train'
+save_path_test = './data/test'
 
-print("small images!!!: ")
 for i in range(1, 5001):
     image_filename = f'{i}.jpg'
     image_path = os.path.join('../Data/Train', image_filename)
-    generate_data_for_image(image_path, i, rho, patch_size)
+    generate_data_for_image(image_path, save_path_train, i, rho, patch_size)
 
+for i in range(1, 1001):
+    image_filename = f'{i}.jpg'
+    image_path = os.path.join('../Data/Val', image_filename)
+    generate_data_for_image(image_path, save_path_test, i, rho, patch_size)
+    
 print("Data generation complete.")

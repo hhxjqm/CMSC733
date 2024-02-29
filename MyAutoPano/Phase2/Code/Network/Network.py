@@ -17,263 +17,167 @@ import numpy as np
 import torch.nn.functional as F
 import kornia  # You can use this to get the transform and warp in this project
 import pytorch_lightning as pl
+import cv2
 
 # Don't generate pyc codes
 sys.dont_write_bytecode = True
 
-def SupLossFn(predicted_homography, gt):
-    # Calculate the loss as MSE between predicted and ground truth homographies
-    loss = F.mse_loss(predicted_homography, gt)
-    return loss
+###############################################
+# Supervised Approach
+###############################################
 
-class SupHomographyModel(pl.LightningModule):
-    def __init__(self, input_size, output_size, learning_rate=1e-3):
+def SupLossF(predicted, target):
+    return F.mse_loss(predicted, target)
+
+class SupHomographyModel(nn.Module):
+    def __init__(self):
         super(SupHomographyModel, self).__init__()
-        self.save_hyperparameters()
-        self.model = Net(input_size, output_size)
+        self.net = Net()
 
-    def forward(self, a, b):
-        return self.model(a, b)
+    def forward(self, PA, PB):
+        return self.net(PA, PB)
 
-    def training_step(self, batch, batch_idx):
-        img_a, patch_a, patch_b, corners, gt = batch
-        delta = self(img_a, patch_b)
-        predicted_homography = delta
-        loss = SupLossFn(predicted_homography, gt)
-        self.log("train_loss", loss)
+    def training_step(self, predicted_H4Pt_batch, H4Pt_batch):
+        loss = SupLossF(predicted_H4Pt_batch, H4Pt_batch)
         return loss
 
-    def validation_step(self, batch, batch_idx):
-        img_a, patch_a, patch_b, corners, gt = batch
-        delta = self(img_a, patch_b)
-        predicted_homography = delta
-        loss = SupLossFn(predicted_homography, gt)
-        self.log("val_loss", loss)
-        return loss
-
-    def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
-        return optimizer
+    def validation_step(self, predicted_H4Pt_batch, H4Pt_batch):
+        loss = SupLossF(predicted_H4Pt_batch, H4Pt_batch)
+        return {"loss": loss}
 
 class Net(nn.Module):
-    def __init__(self, input_size, output_size, image_size):
+    def __init__(self):
         super(Net, self).__init__()
-        # Calculate the size of the output from the conv layers to feed into the fully connected layer
-        # Assuming the input goes through two max pooling layers with kernel size 2 and stride 2
-        self.output_size_conv = 64 * (image_size // 4) * (image_size // 4)
 
-        self.localization = nn.Sequential(
-            nn.Conv2d(input_size, 8, kernel_size=7),
-            nn.MaxPool2d(2, stride=2),
-            nn.ReLU(True),
-            nn.Conv2d(8, 10, kernel_size=5),
-            nn.MaxPool2d(2, stride=2),
-            nn.ReLU(True)
-        )
+        # Convolutional layers
+        self.conv1 = nn.Conv2d(6, 64, kernel_size=3, stride=1, padding=1)
+        self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1)
+        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)  # Output size: [64, 64, 64]
 
-        self.fc_loc = nn.Sequential(
-            nn.Linear(10 * 3 * 3, 32),
-            nn.ReLU(True),
-            nn.Linear(32, 3 * 2)
-        )
+        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
+        self.conv4 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1)
+        self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)  # Output size: [128, 32, 32]
 
-        # Initialize the weights/bias with identity transformation
-        self.fc_loc[2].weight.data.zero_()
-        self.fc_loc[2].bias.data.copy_(torch.tensor([1, 0, 0, 0, 1, 0], dtype=torch.float))
+        self.conv5 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1)
+        self.conv6 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1)
+        self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)  # Output size: [128, 16, 16]
 
-        self.conv_layers = nn.Sequential(
-            nn.Conv2d(input_size, 64, kernel_size=3, padding=1),
-            nn.ReLU(),
-        )
+        # Fully connected layers
+        # After the final pooling layer, the size will be [128, 16, 16]
+        # We need to flatten this to connect to a fully connected layer
+        self.fc1 = nn.Linear(128 * 16 * 16, 1024)
+        self.fc2 = nn.Linear(1024, 8)  # We predict 8 values for the homography
 
-        self.fc_layers = nn.Sequential(
-            nn.Linear(self.output_size_conv, 1024),
-            nn.ReLU(),
-            nn.Linear(1024, output_size)
-        )
+    def forward(self, PA, PB):
+        # Concatenate PA and PB along the channel dimension
+        x = torch.cat((PA, PB), dim=1)  # [batch_size, 6, 128, 128]
+        
+        # Forward pass through the convolutional layers and pooling layers
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = self.pool1(x)
 
-    def forward(self, x):
-        x = self.stn(x)
-        x = self.conv_layers(x)
-        x = x.view(x.size(0), -1)
-        x = self.fc_layers(x)
+        x = F.relu(self.conv3(x))
+        x = F.relu(self.conv4(x))
+        x = self.pool2(x)
+
+        x = F.relu(self.conv5(x))
+        x = F.relu(self.conv6(x))
+        x = self.pool3(x)
+
+        # Flatten the output for the fully connected layers
+        x = x.view(-1, 128 * 16 * 16)  # Flatten the tensor
+        
+        # Forward pass through the fully connected layers
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)  # No activation function, because this is a regression problem
+        
         return x
+    
+    
 
-    def stn(self, x):
-        xs = self.localization(x)
-        xs = xs.view(-1, 10 * 3 * 3)
-        theta = self.fc_loc(xs)
-        theta = theta.view(-1, 2, 3)
-        grid = F.affine_grid(theta, x.size())
-        x = F.grid_sample(x, grid)
-        return x
+###############################################
+# Unsupervised Approach
+###############################################
 
-
-
-
-#########################################################################################
-###                                UNSUPERVISED NETWORK                               ###
-#########################################################################################
-
-
-def UnsupLossFn(patch_b, patch_b_pred):
-    loss = np.sum(abs(patch_b-patch_b_pred))
+def UnSupLossF(CA, H4Pt, PA, PB):
+    CB = CA + H4Pt
+    H = torch.stack([dlt(ca, cb) for ca, cb in zip(CA, CB)])
+    w_PA = torch.stack([stn(pa, h) for pa, h in zip(PA, H)])
+    loss = torch.norm(w_PA - PB, p=1, dim=(1, 2, 3)).mean()
     return loss
 
 class UnSupHomographyModel(pl.LightningModule):
-    def __init__(self, InputSize, OutputSize):
+    def __init__(self):
         super(UnSupHomographyModel, self).__init__()
-        self.model = UnSupNet(InputSize,OutputSize)
+        self.net = Net()
 
-    def forward(self, a, b):
-        return self.model(a, b)
+    def forward(self, patch_a, patch_b):
+        predicted_H4Pt_batch =  self.net(patch_a, patch_b)
+        return predicted_H4Pt_batch
+
+    def training_step(self, CA_Batch, predicted_H4Pt_batch, PA_Batch, PB_Batch):
+        loss = UnSupLossF(CA_Batch, predicted_H4Pt_batch, PA_Batch, PB_Batch)
+        return loss
+
+    def validation_step(self, CA_Batch, predicted_H4Pt_batch, PA_Batch, PB_Batch):
+        loss = UnSupLossF(CA_Batch, predicted_H4Pt_batch, PA_Batch, PB_Batch)
+        return {"loss": loss}
+
+def dlt(CA, CB):
+    A = np.zeros((8, 9))
+    CA = CA.detach().cpu().numpy()
+    CB = CB.detach().cpu().numpy()
+    for i in range(4):
+        x, y = CB[2*i], CB[2*i + 1]
+        X, Y = CA[2*i], CA[2*i + 1]
+        A[2*i] = [-X, -Y, -1, 0, 0, 0, x*X, x*Y, x]
+        A[2*i + 1] = [0, 0, 0, -X, -Y, -1, y*X, y*Y, y]
+    A_tilde = A[:, :8]
+    b_tilde = -A[:, 8]
+    h_tilde, _, _, _ = np.linalg.lstsq(A_tilde, b_tilde, rcond=None)
+    h = np.append(h_tilde, 1)
+    H = h.reshape(3, 3)
+    return torch.tensor(H, dtype=torch.float32)
+
+
+
+# Define your stn function which stacks transformations for each pair of PA and H
+def stn(PA, H):
     
-    def training_step(self, batch):
-        patch, H4Pt, Corner = batch
-        patchB_pred         = self.model(patch,Corner)
-        PhotoLoss           = UnsupLossFn(patch, patchB_pred)
-        # delta_arr           = delta.cpu().detach().numpy()
-        # H_AB                = self.model.DLT(delta_arr,ConerBatch)
-        logs = {"loss": PhotoLoss}
-        return {"loss": PhotoLoss, "log": logs}#, "delta_arr": delta_arr}
+    PA_numpy = PA.detach().cpu().numpy()
+    H_numpy = H.detach().cpu().numpy()
+    
+    print("PPPPPA_numpy: ")
+    print(PA_numpy.shape)
+    print("H_numpy: ")
+    print(H_numpy.shape)
+    
+    warped_image = cv2.warpPerspective(PA_numpy, H_numpy, dsize=(128, 128))
+    print("warped_image: ")
+    print(warped_image.shape)
+    
+    warped_tensor = torch.tensor(warped_image, dtype=torch.float32)
+    exit(0)
+    # grid = F.affine_grid(H, PA, align_corners=False)
+    # warped_image = F.grid_sample(PA, grid, align_corners=False)
+    
+    return warped_tensor
 
-    def validation_step(self, batch):
-        img_a, patch_a, patch_b, corners, gt = batch
-        delta = self.model(patch_a, patch_b)
-        loss = UnsupLossFn(delta, img_a, patch_b, corners)
-        return {"val_loss": loss}
 
-    def validation_epoch_end(self, outputs):
-        avg_loss = torch.stack([x["val_loss"] for x in outputs]).mean()
-        logs = {"val_loss": avg_loss}
-        return {"avg_val_loss": avg_loss, "log": logs}
-
-
-class UnSupNet(nn.Module):
-    def __init__(self, InputSize, OutputSize):
-        """
-        Inputs:
-        InputSize - Size of the Input
-        OutputSize - Size of the Output
-        """
-        super().__init__()
-        #############################
-        # Fill your network initialization of choice here!
-        #############################
-        ''' CNN model'''
-        self.layer1 = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Dropout(p=0.3))
-        self.layer2 = nn.Sequential(
-            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(), 
-            nn.MaxPool2d(kernel_size = 2, stride = 2),
-            nn.Dropout(p=0.3))
-        self.layer3 = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(),
-            nn.Dropout(p=0.3))
-        self.layer4 = nn.Sequential(
-            nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size = 2, stride = 2),
-            nn.Dropout(p=0.3))
-        self.fc1 = nn.Sequential(
-            nn.Linear(int(InputSize[0]/4)*int(InputSize[1]/4)*128, 4096),
-            nn.ReLU(),
-            nn.Dropout(p=0.5)) 
-        self.fc2 = nn.Sequential(
-            nn.Linear(4096, 2048),
-            nn.ReLU(),
-            nn.Dropout(p=0.5)) 
-        self.fc3= nn.Sequential(
-            nn.Linear(2048, OutputSize))
-
-        #############################
-        # You will need to change the input size and output
-        # size for your Spatial transformer network layer!
-        #############################
-        # Spatial transformer localization-network
-        self.localization = nn.Sequential(
-            nn.Conv2d(1, 8, kernel_size=7),
-            nn.MaxPool2d(2, stride=2),
-            nn.ReLU(True),
-            nn.Conv2d(8, 10, kernel_size=5),
-            nn.MaxPool2d(2, stride=2),
-            nn.ReLU(True),
-        )
-
-        # Regressor for the 3 * 2 affine matrix
-        self.fc_loc = nn.Sequential(
-            nn.Linear(10 * 3 * 3, 32), nn.ReLU(True), nn.Linear(32, 3 * 2)
-        )
-
-        # Initialize the weights/bias with identity transformation
-        self.fc_loc[2].weight.data.zero_()
-        self.fc_loc[2].bias.data.copy_(
-            torch.tensor([1, 0, 0, 0, 1, 0], dtype=torch.float)
-        )
-
-    #############################
-    # You will need to change the input size and output
-    # size for your Spatial transformer network layer!
-    #############################
-    def DLT(self,delta,Corners):
-        H4Pt = delta.cpu().detach().numpy()
-        H_AB = np.empty((3,3,3))
-        for i in range(H4Pt.shape[0]):
-            label = np.array(H4Pt[i].reshape(-1,2))
-            pred_label = np.array(H4Pt[i].reshape(-1,2)) 
-            M = np.zeros((8,8))
-            N = np.zeros((8,1))
-            j=0
-            for real_corner, pred_corner in zip(label,pred_label):
-                ru,rv    = real_corner
-                pu,pv    = pred_corner
-                M[j,:]   = np.array([0,0,0,-ru,-rv,-1,pu*ru,pv*rv])
-                M[j+1,:] = np.array([ru,rv,1,0,0,0,-pu*ru,-pv*rv])
-                N[j]     = pv
-                N[j+1]   = pu 
-                j+=2
-            H = np.reshape(np.append(np.linalg.solve(M,N),[1]),(3,3))
-            H_AB[i] = H 
-        return H_AB
-
-    def stn(self, x):
-        "Spatial transformer network forward function"
-        xs      = self.localization(x)
-        xs      = xs.view(-1, 10 * 3 * 3)
-        theta   = self.fc_loc(xs)
-        theta   = theta.view(-1, 2, 3)
-
-        grid    = F.affine_grid(theta, x.size())
-        x       = F.grid_sample(x, grid)
-        return x
-
-    def forward(self, xb, corner):
-        """
-        Input:
-        xa is a MiniBatch of the image a
-        xb is a MiniBatch of the image b
-        Outputs:
-        out - output of the network
-        """
-        #############################
-        # Fill your network structure of choice here!
-        #############################
-        out = self.layer1(xb)
-        out = self.layer2(out)
-        out = self.layer3(out)
-        out = self.layer4(out)
-        out = torch.flatten(out, 1)
-        out = self.fc1(out)
-        out = self.fc2(out)
-        out = self.fc3(out)
-        H_AB = self.DLT(out,corner)
-        PB_pred = self.stn(H_AB,xb)
-        return PB_pred
+# def dlt_svd(CA, CB):
+#     if CA.shape != (4, 2) or CB.shape != (4, 2):
+#         raise ValueError("CA and CB must be 4x2 arrays representing four points.")
+#     N = 4
+#     A = np.zeros((2 * N, 9))
+#     for i in range(N):
+#         X = CA[i, 0]
+#         Y = CA[i, 1]
+#         x = CB[i, 0]
+#         y = CB[i, 1]
+#         A[2 * i] = [-X, -Y, -1, 0, 0, 0, x * X, x * Y, x]
+#         A[2 * i + 1] = [0, 0, 0, -X, -Y, -1, y * X, y * Y, y]
+#     U, S, Vt = np.linalg.svd(A)
+#     H = Vt[-1].reshape(3, 3)
+#     H = H / H[-1, -1]
+#     return H
