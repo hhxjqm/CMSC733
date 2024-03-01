@@ -2,6 +2,10 @@ import os
 import numpy as np
 import cv2
 
+def create_dir_if_not_exists(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+        
 def generate_data_for_image(image_path, save_path, image_idx, rho, patch_size):
     image = cv2.imread(image_path)
     height, width, _ = image.shape
@@ -10,7 +14,6 @@ def generate_data_for_image(image_path, save_path, image_idx, rho, patch_size):
     x_max, y_max = width - patch_size[1] - rho, height - patch_size[0] - rho
 
     if x_min >= x_max or y_min >= y_max:
-        print(image_path)
         rho = 1
         x_min, y_min = rho, rho
         x_max, y_max = width - patch_size[1] - rho, height - patch_size[0] - rho
@@ -47,8 +50,13 @@ os.makedirs('./data/test/PB', exist_ok=True)
 rho = 16
 patch_size = (128, 128)
 save_path_train = './data/train'
+save_path_val = './data/val'
 save_path_test = './data/test'
 
+create_dir_if_not_exists(save_path_train)
+create_dir_if_not_exists(save_path_val)
+create_dir_if_not_exists(save_path_test)
+            
 for i in range(1, 5001):
     image_filename = f'{i}.jpg'
     image_path = os.path.join('../Data/Train', image_filename)
@@ -57,6 +65,11 @@ for i in range(1, 5001):
 for i in range(1, 1001):
     image_filename = f'{i}.jpg'
     image_path = os.path.join('../Data/Val', image_filename)
+    generate_data_for_image(image_path, save_path_val, i, rho, patch_size)
+    
+for i in range(1, 1001):
+    image_filename = f'{i}.jpg'
+    image_path = os.path.join('../../P1TestSet/Phase2', image_filename)
     generate_data_for_image(image_path, save_path_test, i, rho, patch_size)
     
 print("Data generation complete.")

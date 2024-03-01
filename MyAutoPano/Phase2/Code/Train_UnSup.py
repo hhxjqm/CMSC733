@@ -51,7 +51,7 @@ from Network.Network import SupHomographyModel
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 from Network.Network import UnSupHomographyModel
 
-def Sup_GenerateBatch(PA_Path, PB_Path, CA_Path, MiniBatchSize):
+def UnSup_GenerateBatch(PA_Path, PB_Path, CA_Path, MiniBatchSize):
     PA_Batch = []
     PB_Batch = []
     CA_Batch = []
@@ -89,7 +89,7 @@ def PrettyPrint(NumEpochs, DivTrain, MiniBatchSize, NumTrainSamples, LatestFile)
         print("Loading latest checkpoint with the name " + LatestFile)
 
 
-def TrainOperation(
+def UnSup_TrainOperation(
     NumTrainSamples,
     ImageSize,
     NumEpochs,
@@ -133,8 +133,9 @@ def TrainOperation(
     ###############################################
     # Fill your optimizer of choice here!
     ###############################################
-    Optimizer = torch.optim.AdamW(model.parameters(),lr = 0.0001)
-
+    # Optimizer = torch.optim.AdamW(model.parameters(),lr = 0.0001)
+    Optimizer = torch.optim.SGD(model.parameters(), lr = 0.0001, momentum = 0.9)
+    
     # Tensorboard
     # Create a summary to monitor loss tensor
     Writer = SummaryWriter(LogsPath)
@@ -158,13 +159,15 @@ def TrainOperation(
         epoch_losses = []  # List to store all losses for the current epoch
 
         for PerEpochCounter in tqdm(range(NumIterationsPerEpoch)):
-            PA_Batch, PB_Batch, CA_Batch = Sup_GenerateBatch(PA_path, PB_path, CA_Path, MiniBatchSize)
+            PA_Batch, PB_Batch, CA_Batch = UnSup_GenerateBatch(PA_path, PB_path, CA_Path, MiniBatchSize)
             PA_Batch = PA_Batch.to(device)
             PB_Batch = PB_Batch.to(device)
             CA_Batch = CA_Batch.to(device)
 
             predicted_H4Pt_batch = model.forward(PA_Batch, PB_Batch)
             LossThisBatch = model.training_step(CA_Batch, predicted_H4Pt_batch, PA_Batch, PB_Batch)
+
+            LossThisBatch.requires_grad = True
 
             Optimizer.zero_grad()
             LossThisBatch.backward()
@@ -248,7 +251,7 @@ def main():
     Parser.add_argument(
         "--NumEpochs",
         type=int,
-        default=10,
+        default=20,
         help="Number of Epochs to Train for, Default:50",
     )
     Parser.add_argument(
