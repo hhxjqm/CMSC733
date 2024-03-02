@@ -25,7 +25,6 @@
     ```
     python Train.py --ModelType Sup
     ```
-    - or
     ```
     python Train.py --ModelType UnSup
     ```
