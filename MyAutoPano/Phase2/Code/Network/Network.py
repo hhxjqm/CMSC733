@@ -18,6 +18,8 @@ import torch.nn.functional as F
 import kornia  # You can use this to get the transform and warp in this project
 import pytorch_lightning as pl
 import cv2
+import kornia.geometry.transform as geometry
+
 
 # Don't generate pyc codes
 sys.dont_write_bytecode = True
@@ -106,14 +108,6 @@ def UnSupLossF(CA, H4Pt, PA, PB):
     # loss = criterion(w_PA, PB)
     return loss
 
-# def loss_fn(b_Pred, b_Patch):
-#     criterion = nn.L1Loss()
-#     b_Pred = torch.squeeze(b_Pred,1)
-#     # print("b_Pred.shape :",b_Pred.shape)
-#     # print("b_Patch.shape :",b_Patch.shape)
-#     loss = criterion(b_Pred, b_Patch)
-#     return loss
-
 class UnSupHomographyModel(pl.LightningModule):
     def __init__(self):
         super(UnSupHomographyModel, self).__init__()
@@ -169,127 +163,3 @@ def stn(PA, H):
     warped_tensor = torch.tensor(warped_image, dtype=torch.float32)
     
     return warped_tensor
-
-
-# def dlt_svd(CA, CB):
-#     if CA.shape != (4, 2) or CB.shape != (4, 2):
-#         raise ValueError("CA and CB must be 4x2 arrays representing four points.")
-#     N = 4
-#     A = np.zeros((2 * N, 9))
-#     for i in range(N):
-#         X = CA[i, 0]
-#         Y = CA[i, 1]
-#         x = CB[i, 0]
-#         y = CB[i, 1]
-#         A[2 * i] = [-X, -Y, -1, 0, 0, 0, x * X, x * Y, x]
-#         A[2 * i + 1] = [0, 0, 0, -X, -Y, -1, y * X, y * Y, y]
-#     U, S, Vt = np.linalg.svd(A)
-#     H = Vt[-1].reshape(3, 3)
-#     H = H / H[-1, -1]
-#     return H
-
-
-
-# def loss_fn(b_Pred, b_Patch):
-#     criterion = nn.L1Loss()
-#     b_Pred = torch.squeeze(b_Pred,1)
-#     # print("b_Pred.shape :",b_Pred.shape)
-#     # print("b_Patch.shape :",b_Patch.shape)
-#     loss = criterion(b_Pred, b_Patch)
-#     return loss
-
-# class UnSupHomographyModel(nn.Module):
-#     def __init__(self):
-#         super(UnSupHomographyModel, self).__init__()
-#         self.net = Net()
-#         self.tensorDLT=TensorDLT()
-#         self.stn=STN()
-        
-#     def forward(self, PA, PB):
-#         return self.net(PA, PB)
-    
-#     def training_step(self, TCornerBatch, H4Pt_batch, TImgABatch, TCropBBatch):
-#         # device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-#         # TCropABatch= TCropABatch.to(device)
-#         # TCropBBatch = TCropBBatch.to(device)
-#         # TImgABatch = TImgABatch.to(device)
-#         # TCornerBatch = TCornerBatch.to(device)        
-        
-#         HMatrix = self.tensorDLT(H4Pt_batch,TCornerBatch)
-#         HMatrix.requires_grad_()
-#         b_Pred = self.stn(TImgABatch,HMatrix) 
-#         loss = loss_fn(b_Pred, TCropBBatch)         
-#         return loss
-    
-#     def validation_step(self, batch):
-#         device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-#         images = batch 
-#         images = images.float()
-#         images = images.to(device)
-#         out = self(images)                    
-#         loss = loss_fn(out)           
-#         return {'loss': loss.detach()}
-        
-#     def validation_epoch_end(self, outputs):
-#         batch_losses = [x['loss'] for x in outputs]
-#         epoch_loss = torch.stack(batch_losses).mean()   
-#         return {'train_loss': epoch_loss.item()}
-
-# class TensorDLT(nn.Module):
-#     def __init__(self):
-#         super().__init__()
-        
-#     def forward(self, H4PT,CornerABatch):
-#         H = torch.ones([3,3],dtype=torch.double)
-#         H = torch.unsqueeze(H, 0)
-        
-#         for H4pt,CornerA in zip(H4PT,CornerABatch): 
-#             device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-#             CornerB = CornerA + H4pt 
-#             A = []
-#             B = []
-#             for i in range(0,8,2): 
-#                 Ui = CornerA[i]
-#                 Vi = CornerA[i+1]
-#                 Uidash = CornerB[i]
-#                 Vidash = CornerB[i+1]
-#                 Ai = [[0, 0, 0, -Ui, Vi, -1, Vidash*Ui, Vidash*Vi],
-#                     [Ui, Vi, 1, 0, 0, 0, -Uidash*Ui, -Uidash*Vi]]
-#                 A.extend(Ai)
-#                 bi = [-Vidash,Uidash]
-#                 B.extend(bi)
-#             B= torch.tensor(B)
-#             B = torch.unsqueeze(B, 1)
-#             A = torch.tensor(A).to(device)
-#             B = (B).to(device)
-#             Ainv = torch.inverse(A)
-#             Ainv = Ainv.to(device)
-#             Hi = torch.matmul(Ainv, B)
-#             H33 = torch.tensor([1])
-#             Hi = torch.flatten(Hi)
-#             Hi = torch.cat((Hi,H33),0)
-#             Hi= Hi.reshape([3,3])
-#             H = torch.cat([H, torch.unsqueeze(Hi, 0)])
-#         return H[1:65,:,:]
-
-# class STN(nn.Module):
-#     def __init__(self):
-#         super().__init__()
-
-#     def forward(self,TImgABatch,HMatrix):
-#         TImgABatch=TImgABatch.unsqueeze(1)
-#         TImgABatch = TImgABatch.to(torch.double)
-#         out = kornia.geometry.warp_perspective(TImgABatch, HMatrix, (128, 128), align_corners=True)
-#         return out
-            
-#     def stn(self, x):
-#         "Spatial transformer network forward function"
-#         xs = self.localization(x)
-#         xs = xs.view(-1, 10 * 3 * 3)
-#         theta = self.fc_loc(xs)
-#         theta = theta.view(-1, 2, 3)
-
-#         grid = F.affine_grid(theta, x.size())
-#         x = F.grid_sample(x, grid)
-
-

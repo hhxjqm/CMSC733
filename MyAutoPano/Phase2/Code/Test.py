@@ -97,7 +97,7 @@ def main():
     TestSet = parser.parse_args().TestSet
     
     if ModelType == "Sup":
-        parser.add_argument("--ModelPath", dest="ModelPath", default="../Checkpoints/Sup/9model.ckpt", help="Path to load latest model from, Default:ModelPath")
+        parser.add_argument("--ModelPath", dest="ModelPath", default="../Checkpoints/Sup/19model.ckpt", help="Path to load latest model from, Default:ModelPath")
     elif ModelType == "UnSup":
         parser.add_argument("--ModelPath", dest="ModelPath", default="../Checkpoints/UnSup/19model.ckpt", help="Path to load latest model from, Default:ModelPath")
     else:
@@ -130,8 +130,7 @@ def main():
     image_save_base_path = f'../Result/{ModelType}/{TestSet}'
     create_dir_if_not_exists(image_save_base_path)
         
-    execution = []
-    squared_distances = []
+
     
     for i in random_indices:
         pa_path = f'{BasePath}PA/PA_{i}.jpg'
@@ -139,28 +138,36 @@ def main():
         ca_path = f'{BasePath}CA/CA_{i}.csv'
         h4pt_path = f'{BasePath}H4Pt/H4Pt_{i}.csv'
         image_save_path = f'{image_save_base_path}/{i}_Pre_vs_Ori.jpg'
-
         PA, PB = process_images(pa_path, pb_path)
-        
-        start_time = time.time()
         predicted_H4Pt = predict_homography(model, PA, PB)
-        end_time = time.time()
-        execution_time = end_time - start_time
-        execution.append(execution_time)
-        
         CA, H4Pt = load_points(ca_path, h4pt_path)
         predicted_CB = add_offsets_to_corners(CA, predicted_H4Pt)
         CB = add_offsets_to_corners(CA, H4Pt)
-
-        norm_difference = np.linalg.norm(predicted_H4Pt - H4Pt)
-        squared_distances.append(norm_difference)
-    
         original_image = cv2.imread(f'{originalPath}/{i}.jpg')
         draw_points_and_lines(original_image, predicted_CB, (0, 0, 255), 2)
         draw_points_and_lines(original_image, CB, (255, 0, 0), 2)
         save_image(image_save_path, original_image)
         print("Images save in " + image_save_path)
         
+    execution = []
+    squared_distances = []
+    for i in range(1,1001):
+        pa_path = f'{BasePath}PA/PA_{i}.jpg'
+        pb_path = f'{BasePath}PB/PB_{i}.jpg'
+        ca_path = f'{BasePath}CA/CA_{i}.csv'
+        h4pt_path = f'{BasePath}H4Pt/H4Pt_{i}.csv'
+        PA, PB = process_images(pa_path, pb_path)
+        start_time = time.time()
+        predicted_H4Pt = predict_homography(model, PA, PB)
+        end_time = time.time()
+        execution_time = end_time - start_time
+        execution.append(execution_time)
+        CA, H4Pt = load_points(ca_path, h4pt_path)
+        predicted_CB = add_offsets_to_corners(CA, predicted_H4Pt)
+        CB = add_offsets_to_corners(CA, H4Pt)
+        norm_difference = np.linalg.norm(predicted_H4Pt - H4Pt)
+        squared_distances.append(norm_difference)
+    
     average_squared_distance = np.mean(squared_distances)
     print("Average L2:", average_squared_distance)
     print("run-time for forward: " + str(statistics.mean(execution)))

@@ -11,24 +11,28 @@
     ```
     cd MyAutoPano\Phase2\Code
     ```
+    - Make sure unzip all 3 data
+        - Train.zip
+        - Val.zip
+        - P1TestSet.zip
 
-    Data Generate
+    - Data Generate
     ```
     python generate_data.py
     ```
 
-    Train
+    - Train
     ```
     python Train.py --ModelType Sup
     ```
-    or
+    - or
     ```
     python Train.py --ModelType UnSup
     ```
 
-    Test
+    - Test
     ```
     python test.py --ModelType {1} --TestSet test {2}
     ```
-    {1} should be Sup or UnSup
-    {2} should be test, train or val
+        - {1} should be Sup or UnSup
+        - {2} should be test, train or val

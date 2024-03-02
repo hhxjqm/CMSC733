@@ -47,12 +47,17 @@ os.makedirs('./data/test/H4Pt', exist_ok=True)
 os.makedirs('./data/test/PA', exist_ok=True)
 os.makedirs('./data/test/PB', exist_ok=True)
 
+os.makedirs('./data/val/CA', exist_ok=True)
+os.makedirs('./data/val/H4Pt', exist_ok=True)
+os.makedirs('./data/val/PA', exist_ok=True)
+os.makedirs('./data/val/PB', exist_ok=True)
+
 rho = 16
 patch_size = (128, 128)
 save_path_train = './data/train'
 save_path_val = './data/val'
 save_path_test = './data/test'
-
+    
 create_dir_if_not_exists(save_path_train)
 create_dir_if_not_exists(save_path_val)
 create_dir_if_not_exists(save_path_test)

@@ -275,8 +275,8 @@ def UnSup_TrainOperation(
     ###############################################
     # Fill your optimizer of choice here!
     ###############################################
-    # Optimizer = torch.optim.AdamW(model.parameters(),lr = 0.0001)
-    Optimizer = torch.optim.SGD(model.parameters(), lr = 0.0001, momentum = 0.9)
+    Optimizer = torch.optim.AdamW(model.parameters(),lr = 0.0001)
+    # Optimizer = torch.optim.SGD(model.parameters(), lr = 0.0001, momentum = 0.9)
     
     # Tensorboard
     # Create a summary to monitor loss tensor
@@ -311,7 +311,7 @@ def UnSup_TrainOperation(
 
             LossThisBatch.requires_grad = True
 
-            Optimizer.zero_grad()
+            # Optimizer.zero_grad()
             LossThisBatch.backward()
             Optimizer.step()
 
@@ -347,6 +347,7 @@ def UnSup_TrainOperation(
             SaveName,
         )
         print("\n" + SaveName + " Model Saved...")
+
         
 def plot_loss(logs_path):
     event_acc = EventAccumulator(logs_path)
