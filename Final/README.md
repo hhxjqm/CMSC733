@@ -11,8 +11,9 @@ Create a `.env` file in your project directory and add the following lines. Repl
 OPENAI_API_KEY=''
 IMAGE_FILE_PATH=''
 NUM_PROMPTS=10
+```
 
-## How to Run:
+## How to Run
 
 ```bash
 python generate_image.py
