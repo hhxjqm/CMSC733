@@ -1,2 +1,0 @@
-Average L2: 16.595078864034065
-run-time for forward: 0.023334789276123046
