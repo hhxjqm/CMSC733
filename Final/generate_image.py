@@ -12,17 +12,8 @@ import nlpaug.augmenter.sentence as nas
 import nlpaug.flow as nafc
 from nlpaug.util import Action
 import os
-import scipy
-# from numpy import triu
-
-# from nlpaug.util.file.download import DownloadUtil
-# DownloadUtil.download_word2vec(dest_dir='.')
+import json
 load_dotenv()
-model_dir = os.getenv('MODEL_DIR')
-
-
-# cannot import name 'triu' from 'scipy.linalg'
-
 
 def load_json_data(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
@@ -69,20 +60,12 @@ def create_directory(dir_path):
         except Exception as e:
             print(f"Failed to delete {file_path}. Reason: {e}")
 
-def augmenter_WordEmbsAug(text):   
-    # model_type: word2vec, glove or fasttext
-    # Using word2vec here
-    aug = naw.WordEmbsAug(
-    model_type='word2vec', model_path=model_dir+'GoogleNews-vectors-negative300.bin',action="substitute")
-    augmented_text = aug.augment(text)
-    return augmented_text
-
 def augmenter_ContextualWordEmbsAug(text):    
     aug = naw.ContextualWordEmbsAug(model_path='bert-base-uncased', action="insert")
     augmented_text = aug.augment(text)
     return augmented_text
 
-def augmenter_synonym_RandomWordAug(text):    
+def augmenter_RandomWordAug(text):    
     aug = naw.RandomWordAug()
     augmented_text = aug.augment(text)
     return augmented_text
@@ -104,37 +87,44 @@ def main():
     data = load_json_data(file_path)
     random_prompts = select_random_prompts(data, num_prompts)
     client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+    dict = {}
     
-    i = 0
+    i = 11
     for image_name, prompt in random_prompts.items():
         print(f"\n===============================Image{i}============================================\n")
         save_path = f'new_image/image{i}'
         try:
-            # Get image from origin prompt
-            image_url = get_url(client, prompt)
+            # Prepare 
             create_directory(save_path)
             find_and_copy_file(source_folder, save_path, image_name)
-            download_image(image_url, f'{save_path}/origin.png')
             
             # Get new prompt
             new_prompt_ContextualWordEmbsAug = augmenter_ContextualWordEmbsAug(prompt)[0]
-            # new_prompt_WordEmbsAug = augmenter_WordEmbsAug(prompt)[0]
-            new_prompt_RandomWordAug = augmenter_synonym_RandomWordAug(prompt)[0]
-            print(f"Origin:                {prompt} \n")
-            print(f"ContextualWordEmbsAug: {new_prompt_ContextualWordEmbsAug} \n")
-            # print(f"WordEmbsAug:         {new_prompt_WordEmbsAug} \n")
-            print(f"RandomWordAug:         {new_prompt_RandomWordAug}")
+            new_prompt_RandomWordAug = augmenter_RandomWordAug(prompt)[0]
             
             # Get new image
+            image_url_origin = get_url(client, prompt)
             image_url_ContextualWordEmbsAug = get_url(client, new_prompt_ContextualWordEmbsAug)
-            # image_url_WordEmbsAug = get_url(client, new_prompt_WordEmbsAug)
             image_url_RandomWordAug = get_url(client, new_prompt_RandomWordAug)
             
             # Save new image
-            download_image(image_url_ContextualWordEmbsAug, f'{save_path}/ContextualWordEmbsAug.png')
-            # download_image(image_url_WordEmbsAug, f'{save_path}/WordEmbsAug.png')
-            download_image(image_url_RandomWordAug, f'{save_path}/RandomWordAug.png')
+            download_image(image_url_origin, f'{save_path}/origin.webp')
+            download_image(image_url_ContextualWordEmbsAug, f'{save_path}/ContextualWordEmbsAug.webp')
+            download_image(image_url_RandomWordAug, f'{save_path}/RandomWordAug.webp')
             
+            # Print prompts
+            print(f"Origin:                {prompt} \n")
+            print(f"ContextualWordEmbsAug: {new_prompt_ContextualWordEmbsAug} \n")
+            print(f"RandomWordAug:         {new_prompt_RandomWordAug}")
+            
+            # Save
+            dict[f"image{i}"] = {
+                "p": prompt,
+                "CWE_p": new_prompt_ContextualWordEmbsAug,
+                "RDW_p": new_prompt_RandomWordAug,
+                "path": f"new_image/image{i}",
+                "b_img": image_name
+            }
         except openai.BadRequestError as e:
             print("Rejected from openai safety system, prompt may contain text that is not allowed")
             i = i + 1
@@ -142,5 +132,7 @@ def main():
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
         i = i + 1
+    with open('Results/data.json', 'w') as file:
+        json.dump(dict, file, indent=4)
 if __name__ == '__main__':
     main()

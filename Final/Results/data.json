@@ -1,0 +1,72 @@
+{
+    "image0": {
+        "p": "spooky halloweeen pattern, skull, bat, pumpkin, scary ",
+        "CWE_p": "old spooky forest halloweeen death pattern, dead skull, bat, pumpkin, dead scary",
+        "RDW_p": "spooky pattern, bat, pumpkin,",
+        "path": "new_image/image0",
+        "b_img": "43c3b7bb-096d-45ec-9962-8568fafd2a25.webp"
+    },
+    "image1": {
+        "p": "complex 3 d render hyper detailed ultra sharp beautiful futuristic close - up stunning biomechanical humanoid woman with carved porcelain ivory fair face, iris van herpen daisies corals cyberpunk filigree lace haute couture headdress with rhizomorph finials spires, brackets, fractal red puffballs, octane render, 8 k ",
+        "CWE_p": "complex digital 3 d render features hyper detailed ultra 8 sharp beautiful futuristic close - up stunning biomechanical humanoid woman with carved back porcelain ivory fair haired face, iris van herpen soft daisies corals delicate cyberpunk filigree lace haute couture design headdress with delicate rhizomorph and finials spires, brackets, fractal red puffballs, octane render, 8 k",
+        "RDW_p": "complex 3 d render hyper detailed ultra sharp futuristic close - up stunning humanoid woman with ivory face, iris van herpen daisies corals cyberpunk haute couture headdress rhizomorph finials spires, brackets, fractal red, octane, 8 k",
+        "path": "new_image/image1",
+        "b_img": "1d583cb7-9469-4b24-b6c2-79fd77f62c1c.webp"
+    },
+    "image2": {
+        "p": "dragon portrait, artstation, pixar render, high quality, wings of fire ",
+        "CWE_p": "3 dragon knight portrait, artstation, 1 pixar render, a high render quality, 3 wings of fire",
+        "RDW_p": "portrait, artstation, pixar render, quality,",
+        "path": "new_image/image2",
+        "b_img": "039af9d7-04f9-4d5f-bdc5-696a2f820627.webp"
+    },
+    "image3": {
+        "p": "the statue david from michelangelo sitting at a poker table with many chips in front of him, playing poker in the golden nugget sitting with beautiful women ",
+        "CWE_p": "the tall statue david from michelangelo were sitting down at a poker table playing with their many playing chips spread in front of him, playing poker in about the golden nugget game sitting with beautiful women",
+        "RDW_p": "David, the sitting a poker table with chips in front of him, poker in golden nugget sitting with women",
+        "path": "new_image/image3",
+        "b_img": "807536fa-fa00-4e6c-9661-791f51aa902a"
+    },
+    "image4": {
+        "p": "a crow knight with dragonscales, within a circle of feathered reef, attack profile angle, centered on family crest shield, coat of arms, pencil and ink, very detailed, artstation, mysterious, mythical, greek mythology, norse mythology, full frame, dramatic shading, jonathan pointer, janie penny,",
+        "CWE_p": "a crow knight with winged dragonscales, within a red circle skirt of feathered reef, wide attack profile angle, centered on family crest shield, coat of state arms, pencil and ink, very detailed, with artstation, mysterious, mythical, old greek mythology, norse mythology, full frame, dramatic shading, representing jonathan pointer, with janie her penny,",
+        "RDW_p": "crow knight with, within a circle, attack profile angle, family crest shield, coat of arms, pencil and ink, very detailed, , mysterious, , greek, norse mythology, full frame, dramatic shading, jonathan pointer, janie penny,",
+        "path": "new_image/image4",
+        "b_img": "80c69d4d-6d1b-490a-bcec-61fbd3cfb201.webp"
+    },
+    "image5": {
+        "p": "aesthetic house on fire, golden hour, bad weather, ultra hd, extreme details, extremely sharp photograph, ultra sharp, hyper detailed, 8 k, shot on 3 5 mm film camera, smooth sharp forcus, realism, tumblr aesthetic, ",
+        "CWE_p": "aesthetic from house on live fire, golden film hour, bad weather, good ultra sharp hd, essential extreme details, extremely sharp photograph, enhanced ultra sharp, hyper detailed, 8 k, all shot on 3 5 mm film camera, super smooth sharp forcus, realism, tumblr and aesthetic,",
+        "RDW_p": "aesthetic on, golden hour, bad weather, hd, , sharp photograph, ultra sharp, detailed, 8, shot on 3 5 mm camera, smooth forcus, realism, tumblr aesthetic,",
+        "path": "new_image/image5",
+        "b_img": "dbf2cfdb-4fb5-4f29-ad0b-c31eef98005e.webp"
+    },
+    "image6": {
+        "p": "abandoned by odile decq, assassin's creed apocalyptic fantasy, archdaily, wallpaper, highly detailed, trending on artstation.",
+        "CWE_p": "currently abandoned by professor odile decq, another assassin's creed creed apocalyptic space fantasy, archdaily, like wallpaper, was highly detailed, trending artist on edge artstation.",
+        "RDW_p": "abandoned by, assassin ' s fantasy, , wallpaper, detailed, on artstation.",
+        "path": "new_image/image6",
+        "b_img": "3657fe9d-ea04-4c7b-aef6-2217075818f2.webp"
+    },
+    "image7": {
+        "p": "dream rose covered with clean crystal, sharp edges, transparent, beautiful, lens focused on crystal rose, blur background, highly detailed, high render ",
+        "CWE_p": "dream blue rose covered with clean black crystal, medium sharp clear edges, nearly transparent, beautiful, lens sharp focused on crystal and rose, blurred blur background, features highly detailed, high render",
+        "RDW_p": "rose with clean crystal, , transparent, , lens focused crystal, blur, highly detailed, render",
+        "path": "new_image/image7",
+        "b_img": "32ea60fa-abd8-4f79-b294-c27b07036526.webp"
+    },
+    "image8": {
+        "p": "lightning strike on tree, tree glowing with lightning, storm, thunder, night theme, dramatic clouds, highly detailed, high render ",
+        "CWE_p": "lightning strike perched on tree, green tree base glowing with flashing lightning, hail storm, thunder, southern night theme, dramatic clouds, highly visually detailed, very high render",
+        "RDW_p": "lightning strike tree, glowing, storm, thunder, night theme, , detailed, render",
+        "path": "new_image/image18",
+        "b_img": "28e42eb3-355b-4a45-8603-059b6f2ac941.webp"
+    },
+    "image9": {
+        "p": "forest, top down view, bright red colors, shot on kodak aerochrome film, ",
+        "CWE_p": "forest, top step down view, bright flash red primary colors, color shot mainly on kodak and aerochrome film,",
+        "RDW_p": "forest, top, red, shot on aerochrome film,",
+        "path": "new_image/image9",
+        "b_img": "e629316a-28da-4a5b-a1b4-48e9bf5144a9.webp"
+    }
+}
