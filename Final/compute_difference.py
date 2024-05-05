@@ -1,4 +1,5 @@
 from bert_score import score
+import matplotlib.pyplot as plt
 import json
 import os
 from dotenv import load_dotenv
@@ -33,7 +34,7 @@ P_CWE, R_CWE, F1_CWE = score(cands_CWE, refs, lang='en', verbose=True)
 with open('Results/F1_similarity_CWE.npy', 'wb') as f:
     np.save(f, F1_CWE)
 distance_F1_CWE = [1 - F1 for F1 in F1_CWE]
-with open('Results/distance_F1_CWE.npy', 'wb') as f:
+with open('Results/F1_distance_CWE.npy', 'wb') as f:
     np.save(f, distance_F1_CWE)
     
 # Calculate BERTScore for RDW prompts
@@ -41,11 +42,11 @@ P_RDW, R_RDW, F1_RDW = score(cands_RDW, refs, lang='en', verbose=True)
 with open('Results/F1_similarity_RDW.npy', 'wb') as f:
     np.save(f, F1_RDW)
 distance_F1_RDW = [1 - F1 for F1 in F1_RDW]
-with open('Results/distance_F1_RDW.npy', 'wb') as f:
+with open('Results/F1_distance_RDW.npy', 'wb') as f:
     np.save(f, distance_F1_RDW)
     
 # Load F1 scores and distances
-with open('Results/distance_F1_CWE.npy', 'rb') as f1, open('Results/distance_F1_RDW.npy', 'rb') as f2:
+with open('Results//F1_distance_CWE.npy', 'rb') as f1, open('Results/F1_distance_RDW.npy', 'rb') as f2:
     a = np.load(f1)
     b = np.load(f2)
 print(f"CWE: {a}, \nRDW: {b}")
@@ -85,12 +86,32 @@ for i in range(num_prompts):
     distance_image_CWE = [1 - F for F in image_similarity_CWE]
     distance_image_RDW = [1 - F for F in image_similarity_RDW]
 
-    # Save results to files
-    with open('Results/image_similarity_CWE.npy', 'wb') as f:
-        np.save(f, image_similarity_CWE)
-    with open('Results/image_similarity_RDW.npy', 'wb') as f:
-        np.save(f, image_similarity_RDW)
-    with open('Results/distance_image_CWE.npy', 'wb') as f:
-        np.save(f, distance_image_CWE)
-    with open('Results/distance_image_RDW.npy', 'wb') as f:
-        np.save(f, distance_image_RDW)
+# Save results to files
+with open('Results/image_similarity_CWE.npy', 'wb') as f:
+    np.save(f, image_similarity_CWE)
+with open('Results/image_similarity_RDW.npy', 'wb') as f:
+    np.save(f, image_similarity_RDW)
+with open('Results/image_distance_CWE.npy', 'wb') as f:
+    np.save(f, distance_image_CWE)
+with open('Results/image_distance_RDW.npy', 'wb') as f:
+    np.save(f, distance_image_RDW)
+
+with open('Results/image_distance_CWE.npy', 'rb') as f1, open('Results/image_distance_RDW.npy', 'rb') as f2:
+    a = np.load(f1)
+    b = np.load(f2)
+print(f"\nCWE: {a}, \nRDW: {b}")
+
+def plot(data, title, y_range, save):
+    plt.bar(range(1, 11), data)
+    plt.title(title)
+    plt.xlabel("Images")
+    plt.ylabel("Distance")
+    plt.ylim(0, y_range)
+    plt.savefig(f"{save}.png", format='png')
+    plt.close()
+    
+# Visualization
+plot(distance_F1_CWE, "Differences between two ContextualWordEmbsAug prompts", 0.14, "Results/distant_CWE_prompts")
+plot(distance_F1_RDW, "Differences between two RandomWordAug prompts", 0.12, "Results/distant_RDW_prompt")
+plot(distance_image_CWE, "Differences between two ContextualWordEmbsAug images", 0.12, "Results/distant_CWE_images")
+plot(distance_image_RDW, "Differences between two RandomWordAug images", 0.22, "Results/distant_RDW_images")
