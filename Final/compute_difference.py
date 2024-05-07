@@ -101,17 +101,34 @@ with open('Results/image_distance_CWE.npy', 'rb') as f1, open('Results/image_dis
     b = np.load(f2)
 print(f"\nCWE: {a}, \nRDW: {b}")
 
-def plot(data, title, y_range, save):
+def plot(data, data2, title, y_range, save):
     plt.bar(range(1, 11), data)
     plt.title(title)
     plt.xlabel("Images")
-    plt.ylabel("Distance")
+    plt.ylabel("Distance(%)")
     plt.ylim(0, y_range)
     plt.savefig(f"{save}.png", format='png')
     plt.close()
-    
+
+def plot_combine(data, data2, title, y_range, save):
+    width = 0.35
+    ind = range(1, len(data) + 1)
+    plt.bar(ind, data, width, label='Data 1', color='blue')
+    plt.bar([p + width for p in ind], data2, width, label='Data 2', color='red')
+    plt.legend()
+    plt.title(title)
+    plt.xlabel("Images")
+    plt.ylabel("Distance(%)")
+    plt.ylim(0, y_range)
+    plt.savefig(f"{save}.png", format='png')
+    plt.close()
+
+
 # Visualization
 plot(distance_F1_CWE, "Differences between two ContextualWordEmbsAug prompts", 0.14, "Results/distant_CWE_prompts")
 plot(distance_F1_RDW, "Differences between two RandomWordAug prompts", 0.12, "Results/distant_RDW_prompt")
 plot(distance_image_CWE, "Differences between two ContextualWordEmbsAug images", 0.12, "Results/distant_CWE_images")
 plot(distance_image_RDW, "Differences between two RandomWordAug images", 0.22, "Results/distant_RDW_images")
+
+plot_combine(distance_F1_CWE, distance_F1_RDW, "Differences between two prompts", 0.14, "Results/distant_prompts")
+plot_combine(distance_image_CWE, distance_image_RDW, "Differences between images", 0.22, "Results/distant_images")
