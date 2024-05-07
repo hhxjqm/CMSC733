@@ -20,8 +20,10 @@ pip install git+https://github.com/openai/CLIP.git
 Create a `.env` file in your project directory and add the following lines. Replace the placeholder values with your actual data:
 
 ```plaintext
-OPENAI_API_KEY=''
-IMAGE_FILE_PATH=''
+OPENAI_API_KEY = ''
+IMAGE_FILE_PATH = '<Path to images you just download>'
+DATA_SAVE_PATH = ''
+IMAGE_SAVE_PATH = ''
 NUM_PROMPTS=10
 ```
 

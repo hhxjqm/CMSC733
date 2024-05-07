@@ -88,16 +88,17 @@ def get_url(client,prompt):
 def main():
     file_path = 'part-000001.json' 
     source_folder = os.getenv('IMAGE_FILE_PATH')
-    num_prompts = int(os.getenv('NUM_PROMPTS'))
+    NUM_PROMPTS = int(os.getenv('NUM_PROMPTS'))
+    IMAGE_SAVE_PATH = os.getenv('IMAGE_SAVE_PATH')
     data = load_json_data(file_path)
-    random_prompts = select_random_prompts(data, num_prompts)
+    random_prompts = select_random_prompts(data, NUM_PROMPTS)
     client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
     dict = {}
     
     i = 0
     for image_name, prompt in random_prompts.items():
         print(f"\n===============================Image{i}============================================\n")
-        save_path = f'new_image/image{i}'
+        save_path = f'{IMAGE_SAVE_PATH}image{i}'
         try:
             # Prepare 
             create_directory(save_path)
