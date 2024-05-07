@@ -70,6 +70,11 @@ def augmenter_RandomWordAug(text):
     augmented_text = aug.augment(text)
     return augmented_text
 
+def augmenter_Synonym(text): 
+    aug = naw.SynonymAug(aug_src='wordnet')
+    augmented_text = aug.augment(text)
+    return augmented_text
+
 def get_url(client,prompt):
     response = client.images.generate(
         model="dall-e-3",
@@ -89,7 +94,7 @@ def main():
     client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
     dict = {}
     
-    i = 11
+    i = 0
     for image_name, prompt in random_prompts.items():
         print(f"\n===============================Image{i}============================================\n")
         save_path = f'new_image/image{i}'
@@ -101,27 +106,32 @@ def main():
             # Get new prompt
             new_prompt_ContextualWordEmbsAug = augmenter_ContextualWordEmbsAug(prompt)[0]
             new_prompt_RandomWordAug = augmenter_RandomWordAug(prompt)[0]
-            
+            new_prompt_Synonym = augmenter_Synonym(prompt)[0]
+                
             # Get new image
             image_url_origin = get_url(client, prompt)
             image_url_ContextualWordEmbsAug = get_url(client, new_prompt_ContextualWordEmbsAug)
             image_url_RandomWordAug = get_url(client, new_prompt_RandomWordAug)
+            image_url_Synonym = get_url(client, new_prompt_Synonym)
             
             # Save new image
             download_image(image_url_origin, f'{save_path}/origin.webp')
-            download_image(image_url_ContextualWordEmbsAug, f'{save_path}/ContextualWordEmbsAug.webp')
-            download_image(image_url_RandomWordAug, f'{save_path}/RandomWordAug.webp')
+            download_image(image_url_ContextualWordEmbsAug, f'{save_path}/CWE.webp')
+            download_image(image_url_RandomWordAug, f'{save_path}/RDW.webp')
+            download_image(image_url_Synonym, f'{save_path}/SYN.webp')
             
             # Print prompts
             print(f"Origin:                {prompt} \n")
             print(f"ContextualWordEmbsAug: {new_prompt_ContextualWordEmbsAug} \n")
-            print(f"RandomWordAug:         {new_prompt_RandomWordAug}")
+            print(f"RandomWordAug:         {new_prompt_RandomWordAug} \n")
+            print(f"Synonym:               {new_prompt_Synonym}")
             
             # Save
             dict[f"image{i}"] = {
                 "p": prompt,
                 "CWE_p": new_prompt_ContextualWordEmbsAug,
                 "RDW_p": new_prompt_RandomWordAug,
+                "SYN_p": new_prompt_Synonym,
                 "path": f"new_image/image{i}",
                 "b_img": image_name
             }
@@ -132,7 +142,7 @@ def main():
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
         i = i + 1
-    with open('Results/data.json', 'w') as file:
+    with open('Results/datas/data.json', 'w') as file:
         json.dump(dict, file, indent=4)
 if __name__ == '__main__':
     main()
