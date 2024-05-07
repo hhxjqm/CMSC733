@@ -3,7 +3,7 @@
 You can download the dataset by clicking on the following link:
 [Download Link](https://huggingface.co/datasets/poloclub/diffusiondb/resolve/main/images/part-000001.zip?download=true)
 
-## Installation
+## Dependency
 
 ```bash
 pip install openai
