@@ -29,9 +29,9 @@ def np_load(data1, data2, data3):
     print(f"CWE: {a}, \nRDW: {b}, \nSYN: {c} \n")
         
 def plot(data, title, y_lable, y_range, save):
-    plt.bar(range(1, 11), data)
+    plt.bar(range(0, len(data)), data)
     plt.title(title)
-    plt.xlabel("Images")
+    plt.xlabel("index of original prompt")
     plt.ylabel(y_lable)
     plt.ylim(0, y_range)
     plt.savefig(f"{save}.png", format='png')
@@ -40,14 +40,14 @@ def plot(data, title, y_lable, y_range, save):
 def plot_combine(data, data2, data3, title, y_lable, y_range, save):
     width = 0.2
     gap = 0.05
-    ind = range(1, len(data) + 1)
+    ind = range(0, len(data))
     ind = [x + (x-1)*gap for x in ind]
     plt.bar([x - width for x in ind], data, width, label='SYN', color='blue')
     plt.bar(ind, data2, width, label='CWE', color='red')
     plt.bar([x + width for x in ind], data3, width, label='RDW', color='green')
     plt.legend()
     plt.title(title)
-    plt.xlabel("Images")
+    plt.xlabel("index of original prompt")
     plt.ylabel(y_lable)
     plt.xticks([x for x in ind], [f'{i+1}' for i in range(len(data))])
     plt.ylim(0, y_range)
@@ -161,15 +161,15 @@ def main():
     np_load("Human_authorship_CWE.npy", "Human_authorship_RDW.npy", "Human_authorship_SYN.npy")
     
     # Visualization
-    plot(distance_F1_CWE, "Differences between Original and ContextualWordEmbsAug prompts", "Distance(%)", 0.14, "Results/distant_CWE_prompts")
-    plot(distance_F1_RDW, "Differences between Original and RandomWordAug prompts", "Distance(%)", 0.12, "Results/distant_RDW_prompt")
-    plot(distance_image_CWE, "Differences between Original and ContextualWordEmbsAug images", "Distance(%)", 0.12, "Results/distant_CWE_images")
-    plot(distance_image_RDW, "Differences between Original and RandomWordAug images", "Distance(%)", 0.22, "Results/distant_RDW_images")
-    plot(distance_F1_SYN, "Differences between Original and Synonym prompts", "Distance(%)", 0.08, "Results/distant_SYN_prompt")
-    plot(distance_image_SYN, "Differences between Original and Synonym images", "Distance(%)", 0.14, "Results/distant_SYN_images")
+    plot(distance_F1_CWE, "Differences between Original and ContextualWordEmbsAug prompts", "Distance", 0.14, "Results/distant_CWE_prompts")
+    plot(distance_F1_RDW, "Differences between Original and RandomWordAug prompts", "Distance", 0.12, "Results/distant_RDW_prompt")
+    plot(distance_image_CWE, "Differences between Original and ContextualWordEmbsAug images", "Distance", 0.12, "Results/distant_CWE_images")
+    plot(distance_image_RDW, "Differences between Original and RandomWordAug images", "Distance", 0.22, "Results/distant_RDW_images")
+    plot(distance_F1_SYN, "Differences between Original and Synonym prompts", "Distance", 0.08, "Results/distant_SYN_prompt")
+    plot(distance_image_SYN, "Differences between Original and Synonym images", "Distance", 0.14, "Results/distant_SYN_images")
 
-    plot_combine(distance_F1_SYN, distance_F1_CWE, distance_F1_RDW, "Differences between prompts", "Distance(%)", 0.14, "Results/distant_prompts")
-    plot_combine(distance_image_SYN, distance_image_CWE, distance_image_RDW, "Differences between images", "Distance(%)", 0.22, "Results/distant_images")
+    plot_combine(distance_F1_SYN, distance_F1_CWE, distance_F1_RDW, "Differences between prompts", "Distance", 0.14, "Results/distant_prompts")
+    plot_combine(distance_image_SYN, distance_image_CWE, distance_image_RDW, "Differences between images", "Distance", 0.22, "Results/distant_images")
 
     plot(Human_authorship_CWE, "Human Authorship scores for ContextualWordEmbsAug", "Score", 2.00, "Results/HA_scores_CWE")
     plot(Human_authorship_RDW, "Human Authorship scores for RandomWordAug", "Score", 3.50, "Results/HA_scores_RDW")
