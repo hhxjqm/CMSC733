@@ -28,12 +28,13 @@ def np_load(data1, data2, data3):
         c = np.load(f3)
     print(f"CWE: {a}, \nRDW: {b}, \nSYN: {c} \n")
         
-def plot(data, title, y_lable, y_range, save):
-    plt.bar(range(0, len(data)), data)
+def plot(data, title, y_label, y_range, save):
+    plt.bar(range(len(data)), data)
     plt.title(title)
     plt.xlabel("index of original prompt")
-    plt.ylabel(y_lable)
+    plt.ylabel(y_label)
     plt.ylim(0, y_range)
+    plt.xticks(range(len(data)), [str(i) for i in range(len(data))])
     plt.savefig(f"{save}.png", format='png')
     plt.close()
 
