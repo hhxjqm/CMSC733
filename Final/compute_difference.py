@@ -37,19 +37,19 @@ def plot(data, title, y_lable, y_range, save):
     plt.savefig(f"{save}.png", format='png')
     plt.close()
 
-def plot_combine(data, data2, data3, title, y_lable, y_range, save):
+def plot_combine(data, data2, data3, title, y_label, y_range, save):
     width = 0.2
     gap = 0.05
     ind = range(0, len(data))
-    ind = [x + (x-1)*gap for x in ind]
+    ind = [x + x * gap for x in ind]
     plt.bar([x - width for x in ind], data, width, label='SYN', color='blue')
     plt.bar(ind, data2, width, label='CWE', color='red')
     plt.bar([x + width for x in ind], data3, width, label='RDW', color='green')
     plt.legend()
     plt.title(title)
     plt.xlabel("index of original prompt")
-    plt.ylabel(y_lable)
-    plt.xticks([x for x in ind], [f'{i+1}' for i in range(len(data))])
+    plt.ylabel(y_label)
+    plt.xticks(ind, [f'{i}' for i in range(len(data))])
     plt.ylim(0, y_range)
     plt.savefig(f"{save}.png", format='png')
     plt.close()
